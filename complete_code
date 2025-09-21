@@ -1,0 +1,51 @@
+# Does the prevalence of adults without formal education coincide with urban population growth in Algeria between 1965 and 2010?
+
+import pandas as pd
+import matplotlib.pyplot as plt
+import os
+
+# Folders
+data_raw_folder = "data_raw/"
+data_clean_folder = "data_clean/"
+figures_folder = "figures/"
+
+# Load CSV
+filename = "algeria_combined.csv"  # Filtered dataset with only relevant rows
+df = pd.read_csv(os.path.join(data_raw_folder, filename))
+
+# Keep only needed columns
+df = df[["Year", "Indicator Name", "Value"]]
+
+# Convert Year and Value to numeric, drop invalid rows
+df["Year"] = pd.to_numeric(df["Year"], errors="coerce")
+df["Value"] = pd.to_numeric(df["Value"], errors="coerce")
+df = df.dropna(subset=["Year", "Value"])
+
+# Pivot indicators into separate columns
+df_pivot = df.pivot(index="Year", columns="Indicator Name", values="Value").reset_index()
+df_pivot = df_pivot.sort_values("Year")
+
+print("Pivoted Algeria dataset:")
+display(df_pivot)
+
+# Interpolate missing values for smooth plotting (optional)
+df_plot = df_pivot.interpolate(method='linear')
+
+# Plot the two indicators
+plt.figure(figsize=(10,6))
+plt.plot(df_plot["Year"], df_plot["Urban population growth (annual %)"], 
+         marker='o', linestyle='-', label="Urban Population Growth (%)")
+plt.plot(df_plot["Year"], df_plot["Barro-Lee: Percentage of population age 15+ with no education"], 
+         marker='o', linestyle='-', label="Population 15+ No Education (%)")
+
+plt.title("Algeria: Urban Population Growth vs Population Education (1965-2010)")
+plt.xlabel("Year")
+plt.ylabel("Percentage of Population")
+plt.legend()
+plt.grid(True)
+plt.tight_layout()
+plt.savefig(os.path.join(figures_folder, "algeria_urban_pop_growth_vs_pop_edu.png"))
+plt.show()
+
+# Save cleaned CSV
+df_pivot.to_csv(os.path.join(data_clean_folder, "algeria_urban_pop_growth_vs_pop_edu"), index=False)
